@@ -76,7 +76,7 @@ export class KnowledgeBase {
   async searchSimilar(
     query: string,
     limit = 5,
-    similarityThreshold = 0.7,
+    similarityThreshold = 0.1,
     userId?: string,
   ): Promise<SearchResult[]> {
     try {

@@ -163,8 +163,9 @@ export class FreeDocumentProcessor {
         let embedding: any;
 
         const models = [
+          'sentence-transformers/paraphrase-MiniLM-L6-v2',
           'sentence-transformers/all-MiniLM-L6-v2',
-          'microsoft/DialoGPT-medium',
+          'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
         ];
 
         let success = false;
@@ -227,8 +228,9 @@ export class FreeDocumentProcessor {
   async embedQuery(query: string): Promise<number[]> {
     try {
       const models = [
+        'sentence-transformers/paraphrase-MiniLM-L6-v2',
         'sentence-transformers/all-MiniLM-L6-v2',
-        'microsoft/DialoGPT-medium',
+        'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
       ];
 
       for (const model of models) {
