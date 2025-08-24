@@ -82,16 +82,16 @@ export class KnowledgeBase {
     try {
       const queryEmbedding = await this.processor.embedQuery(query);
 
-      // Build the similarity search query using cosine similarity
-      const whereConditions = [
+      // Vector similarity search first
+      const vectorWhere = [
         sql`1 - (${documentChunk.embedding} <=> ${JSON.stringify(queryEmbedding)}) > ${similarityThreshold}`,
       ];
 
       if (userId) {
-        whereConditions.push(eq(knowledgeDocument.userId, userId));
+        vectorWhere.push(eq(knowledgeDocument.userId, userId));
       }
 
-      const results = await db
+      const vectorResults = await db
         .select({
           chunk: documentChunk,
           document: knowledgeDocument,
@@ -102,20 +102,89 @@ export class KnowledgeBase {
           knowledgeDocument,
           eq(documentChunk.documentId, knowledgeDocument.id),
         )
-        .where(and(...whereConditions))
+        .where(and(...vectorWhere))
         .orderBy(
           sql`1 - (${documentChunk.embedding} <=> ${JSON.stringify(queryEmbedding)}) DESC`,
         )
         .limit(limit);
 
-      return results.map((result) => ({
+      if (vectorResults.length > 0) {
+        return vectorResults.map((result) => ({
+          chunk: result.chunk,
+          document: result.document,
+          similarity: result.similarity,
+        }));
+      }
+
+      // Fallback: simple text search using ILIKE on chunk content
+      const tokens = query
+        .split(/\s+/)
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
+
+      const textConditions = [] as any[];
+      if (userId) {
+        textConditions.push(eq(knowledgeDocument.userId, userId));
+      }
+      if (tokens.length > 0) {
+        const likeClauses = tokens.map(
+          (t) => sql`${documentChunk.content} ILIKE ${`%${t}%`}`,
+        );
+        textConditions.push(sql.join(likeClauses, sql` OR `));
+      }
+
+      const textResults = await db
+        .select({
+          chunk: documentChunk,
+          document: knowledgeDocument,
+          similarity: sql<number>`0.0`,
+        })
+        .from(documentChunk)
+        .innerJoin(
+          knowledgeDocument,
+          eq(documentChunk.documentId, knowledgeDocument.id),
+        )
+        .where(and(...textConditions))
+        .orderBy(desc(documentChunk.chunkIndex))
+        .limit(limit);
+
+      return textResults.map((result) => ({
         chunk: result.chunk,
         document: result.document,
         similarity: result.similarity,
       }));
     } catch (error) {
-      console.error('Error searching knowledge base:', error);
-      throw new Error('Failed to search knowledge base');
+      console.error(
+        'Error searching knowledge base (vector), falling back to text search:',
+        error,
+      );
+
+      const textConditions = [] as any[];
+      if (userId) {
+        textConditions.push(eq(knowledgeDocument.userId, userId));
+      }
+      textConditions.push(sql`${documentChunk.content} ILIKE ${`%${query}%`}`);
+
+      const textResults = await db
+        .select({
+          chunk: documentChunk,
+          document: knowledgeDocument,
+          similarity: sql<number>`0.0`,
+        })
+        .from(documentChunk)
+        .innerJoin(
+          knowledgeDocument,
+          eq(documentChunk.documentId, knowledgeDocument.id),
+        )
+        .where(and(...textConditions))
+        .orderBy(desc(documentChunk.chunkIndex))
+        .limit(limit);
+
+      return textResults.map((result) => ({
+        chunk: result.chunk,
+        document: result.document,
+        similarity: result.similarity,
+      }));
     }
   }
 
