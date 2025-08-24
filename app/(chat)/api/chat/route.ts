@@ -159,7 +159,7 @@ export async function POST(request: Request) {
           stopWhen: stepCountIs(5),
           experimental_activeTools:
             selectedChatModel === 'chat-model-reasoning'
-              ? []
+              ? ['searchKnowledge']
               : [
                   'getWeather',
                   'createDocument',
@@ -213,18 +213,26 @@ export async function POST(request: Request) {
     const streamContext = getStreamContext();
 
     if (streamContext) {
-      return new Response(
-        await streamContext.resumableStream(streamId, () =>
-          stream.pipeThrough(new JsonToSseTransformStream()),
-        ),
-      );
-    } else {
-      return new Response(stream.pipeThrough(new JsonToSseTransformStream()));
+      try {
+        return new Response(
+          await streamContext.resumableStream(streamId, () =>
+            stream.pipeThrough(new JsonToSseTransformStream()),
+          ),
+        );
+      } catch (error) {
+        console.error(error);
+        // Fallback to non-resumable streaming when Redis is unreachable
+        return new Response(stream.pipeThrough(new JsonToSseTransformStream()));
+      }
     }
+
+    return new Response(stream.pipeThrough(new JsonToSseTransformStream()));
   } catch (error) {
     if (error instanceof ChatSDKError) {
       return error.toResponse();
     }
+    console.error(error);
+    return new ChatSDKError('bad_request:chat').toResponse();
   }
 }
 

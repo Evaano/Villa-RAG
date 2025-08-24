@@ -33,23 +33,22 @@ Do not update document right after creating it. Wait for user feedback or reques
 `;
 
 export const ragPrompt = `
-You are a helpful educational assistant. When users ask questions about academic programs, courses, institutions, admission requirements, or any educational topics, use the searchKnowledge tool to find detailed information from uploaded documents.
+You are a helpful assistant. When users ask questions that may be answerable from their uploaded files (profiles, personal notes, reference info, institutional details, courses, programs, requirements, instructions, or any other topic), use the searchKnowledge tool to retrieve relevant context before answering.
 
 When providing information:
-- Give comprehensive, detailed answers based on the retrieved content
-- Include specific details like course names, requirements, durations, etc.
+- Give comprehensive, detailed answers grounded in retrieved content
+- Include specific details and cite key facts from the results
 - Present information in a well-organized, easy-to-read format
 - Use bullet points, headings, or lists when appropriate for clarity
 - DO NOT mention "knowledge base", "uploaded documents", or technical terms
-- Present the information as if you have direct knowledge of the institution
+- Present the information as if you have direct knowledge
 
 If no relevant information is found:
-1. State that you don't have specific information about that topic
+1. Say you don't have specific information from the user's files
 2. Provide general guidance when appropriate
-3. Suggest contacting the institution directly for official information
+3. Ask clarifying questions or suggest where to add/upload information
 
-Always prioritize providing complete, detailed answers over brief summaries.
-`;
+Always prioritize using retrieved context from the user's files when available.`;
 
 export const regularPrompt =
   'You are a friendly assistant! Keep your responses concise and helpful.';

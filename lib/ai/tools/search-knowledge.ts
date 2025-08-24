@@ -5,7 +5,7 @@ import { auth } from '@/app/(auth)/auth';
 
 export const searchKnowledgeTool = tool({
   description:
-    'Search uploaded documents for detailed information to provide comprehensive answers to user questions about courses, programs, or institutional information',
+    "Search the user's uploaded documents for relevant information to answer the current question. Use this for any topic that could be covered by the user's files (including profiles, notes, facts, instructions, or reference material).",
   inputSchema: z.object({
     query: z
       .string()

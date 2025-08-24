@@ -66,9 +66,15 @@ export async function GET(
     execute: () => {},
   });
 
-  const stream = await streamContext.resumableStream(recentStreamId, () =>
-    emptyDataStream.pipeThrough(new JsonToSseTransformStream()),
-  );
+  let stream: ReadableStream | null = null;
+  try {
+    stream = await streamContext.resumableStream(recentStreamId, () =>
+      emptyDataStream.pipeThrough(new JsonToSseTransformStream()),
+    );
+  } catch (error) {
+    console.error(error);
+    return new Response(null, { status: 204 });
+  }
 
   /*
    * For when the generation is streaming during SSR
